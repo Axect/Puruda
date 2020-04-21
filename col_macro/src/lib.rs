@@ -1,13 +1,16 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
+// =============================================================================
+// Multicol
+// =============================================================================
 #[proc_macro]
 pub fn multi_col_def(_item: TokenStream) -> TokenStream {
     let mut f = "".to_string();
     for i in 1 .. 33 {
         let mut ts = "T1".to_string();
         let mut ws = "T1: Column".to_string();
-        let mut vs = "col_1: T1,\n".to_string();
+        let mut vs = "header: Vec<&'static str>,\ncol_1: T1,\n".to_string();
         for j in 2 .. i+1 {
             let mut t = ", T".to_string();
             t.push_str(&j.to_string());
@@ -34,12 +37,16 @@ pub fn multi_col_impl(_item: TokenStream) -> TokenStream {
     for i in 1 .. 33 {
         let mut ts = "T1".to_string();
         let mut ws = "T1: Column + Default".to_string();
-        let mut ds = "col_1: T1::default(),\n".to_string();
+        let mut ds = "header: vec![],\ncol_1: T1::default(),\n".to_string();
         let mut ps = "col_1: T1".to_string();
-        let mut vs = "col_1,\n".to_string();
-        let mut cs = "pub fn c1(&self) -> &T1 {{
+        let mut vs = "header: vec![],\ncol_1,\n".to_string();
+        let mut cs = "pub fn c1(&self) -> &T1 {
             &self.col_1
-        }}\n".to_string();
+        }
+        
+        pub fn c1_mut(&mut self) -> &mut T1 {
+            &mut self.col_1
+        }".to_string();
 
         for j in 2 .. i+1 {
             let t = format!(", T{}", j);
@@ -49,7 +56,11 @@ pub fn multi_col_impl(_item: TokenStream) -> TokenStream {
             let v = format!("col_{},\n", j);
             let c = format!("pub fn c{}(&self) -> &T{} {{
                 &self.col_{}
-            }}\n", j, j, j);
+            }}
+            
+            pub fn c{}_mut(&mut self) -> &mut T{} {{
+                &mut self.col_{}
+            }}", j, j, j, j, j, j);
 
             ts.push_str(&t);
             ws.push_str(&w);
@@ -65,6 +76,10 @@ pub fn multi_col_impl(_item: TokenStream) -> TokenStream {
                 }}
             }}
 
+            pub fn set_header(&mut self, header: Vec<&'static str>) {{
+                self.header = header;
+            }} 
+
             pub fn from_cols({}) -> Self {{
                 Self {{
                     {}
@@ -76,4 +91,35 @@ pub fn multi_col_impl(_item: TokenStream) -> TokenStream {
         f.push_str(g.as_str());
     }
     f.parse().unwrap()
+}
+
+
+// =============================================================================
+// Column Implementation
+// =============================================================================
+#[proc_macro]
+pub fn col_vec_impl(item: TokenStream) -> TokenStream {
+    format!(
+        "impl Column for Vec<{}> {{
+            type DType = {};
+
+            fn row(&self) -> usize {{
+                self.len()
+            }}
+        
+            fn idx(&self, n: usize) -> &Self::DType {{ 
+                &self[n] 
+            }}
+        
+            fn idx_mut(&mut self, n: usize) -> &mut Self::DType {{
+                &mut self[n]
+            }}
+
+            fn to_vec(&self) -> &Vec<Self::DType> {{
+                &self
+            }}
+        }}",
+        item,
+        item
+    ).parse().unwrap()
 }
