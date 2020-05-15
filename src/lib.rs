@@ -1,11 +1,13 @@
 extern crate col_macro;
 extern crate csv;
+extern crate serde;
 #[cfg(feature = "netcdf")]
 extern crate netcdf;
 use col_macro::*;
 use csv::{ReaderBuilder, WriterBuilder};
 use std::error::Error;
 use std::ops::{Index, IndexMut};
+use std::str::FromStr;
 use std::string::ToString;
 
 // =============================================================================
@@ -121,8 +123,8 @@ impl<T, S> CSV for Col2<T, S>
 where
     T: Column + Default,
     S: Column + Default,
-    T::DType: ToString,
-    S::DType: ToString,
+    T::DType: ToString + Default + Clone + FromStr,
+    S::DType: ToString + Default + Clone + FromStr,
 {
     fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
         let mut wtr = WriterBuilder::new()
@@ -147,6 +149,18 @@ where
     }
 
     fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>> {
+        let mut rdr = ReaderBuilder::new()
+            .has_headers(true)
+            .delimiter(delimiter as u8)
+            .from_path(file_path)?;
+
+        let header = rdr.headers()?;
+        let (l, _) = rdr.records().size_hint();
+
+        let mut c1: Vec<T::DType> = vec![T::DType::default(); l];
+        let mut c2: Vec<S::DType> = vec![S::DType::default(); l];
+
+        
         unimplemented!()
     }
 }

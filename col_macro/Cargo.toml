@@ -10,3 +10,4 @@ edition = "2018"
 proc_macro = true
 
 [dependencies]
+serde = "1"
