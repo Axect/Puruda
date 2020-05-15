@@ -15,7 +15,6 @@ keywords = ["Dataframe"]
 [dependencies]
 col-macro = { path = "col_macro" }
 csv = { version = "1.1", optional = true }
-serde = "1"
 netcdf = { version = "0.4", default_features = false, optional = true }
 
 [dev-dependencies]

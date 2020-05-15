@@ -1,6 +1,5 @@
 extern crate col_macro;
 extern crate csv;
-extern crate serde;
 #[cfg(feature = "netcdf")]
 extern crate netcdf;
 use col_macro::*;
@@ -123,8 +122,12 @@ impl<T, S> CSV for Col2<T, S>
 where
     T: Column + Default,
     S: Column + Default,
-    T::DType: ToString + Default + Clone + FromStr,
-    S::DType: ToString + Default + Clone + FromStr,
+    T::DType: ToString + FromStr,
+    S::DType: ToString + FromStr,
+    <T::DType as FromStr>::Err: std::fmt::Debug + Error,
+    <S::DType as FromStr>::Err: std::fmt::Debug + Error,
+    Vec<T::DType>: Into<T>,
+    Vec<S::DType>: Into<S>,
 {
     fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
         let mut wtr = WriterBuilder::new()
@@ -154,14 +157,19 @@ where
             .delimiter(delimiter as u8)
             .from_path(file_path)?;
 
-        let header = rdr.headers()?;
-        let (l, _) = rdr.records().size_hint();
+        let mut c1: Vec<T::DType> = vec![];
+        let mut c2: Vec<S::DType> = vec![];
 
-        let mut c1: Vec<T::DType> = vec![T::DType::default(); l];
-        let mut c2: Vec<S::DType> = vec![S::DType::default(); l];
+        for rec in rdr.records() {
+            let rec = rec?;
+            c1.push(rec[0].parse().unwrap());
+            c2.push(rec[1].parse().unwrap());
+        }
 
-        
-        unimplemented!()
+        let mut col = Col2::from_cols(c1.into(), c2.into());
+        col.set_header(vec!["c1", "c2"]);
+
+        Ok(col)
     }
 }
 

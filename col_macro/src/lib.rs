@@ -1,7 +1,5 @@
 extern crate proc_macro;
-extern crate serde;
 use proc_macro::TokenStream;
-use serde::{Serialize, Deserialize};
 
 // =============================================================================
 // Multicol
@@ -24,7 +22,7 @@ pub fn multi_col_def(_item: TokenStream) -> TokenStream {
             ws.push_str(&w);
             vs.push_str(&v);
         }
-        let g = format!("#[derive(Debug, Clone, Serialize, Deserialize)]
+        let g = format!("#[derive(Debug, Clone)]
         pub struct Col{}<{}> where {} {{
             {}
         }}\n", i, ts, ws, vs);
