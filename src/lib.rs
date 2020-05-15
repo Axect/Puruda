@@ -117,61 +117,62 @@ pub trait CSV: Sized {
     fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>>;
 }
 
-#[cfg(feature = "csv")]
-impl<T, S> CSV for Col2<T, S>
-where
-    T: Column + Default,
-    S: Column + Default,
-    T::DType: ToString + FromStr,
-    S::DType: ToString + FromStr,
-    <T::DType as FromStr>::Err: std::fmt::Debug + Error,
-    <S::DType as FromStr>::Err: std::fmt::Debug + Error,
-    Vec<T::DType>: Into<T>,
-    Vec<S::DType>: Into<S>,
-{
-    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
-        let mut wtr = WriterBuilder::new()
-            .delimiter(delimiter as u8)
-            .from_path(file_path)?;
-        let c1 = self.c1();
-        let c2 = self.c2();
-        let r: usize = c1.row();
-        let c: usize = 2; // Col2
-
-        wtr.write_record(self.header())?;
-
-        for i in 0..r {
-            let mut record: Vec<String> = vec!["".to_string(); c];
-            record[0] = c1.idx(i).to_string();
-            record[1] = c2.idx(i).to_string();
-            wtr.write_record(record)?;
-        }
-        wtr.flush()?;
-
-        Ok(())
-    }
-
-    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>> {
-        let mut rdr = ReaderBuilder::new()
-            .has_headers(true)
-            .delimiter(delimiter as u8)
-            .from_path(file_path)?;
-
-        let mut c1: Vec<T::DType> = vec![];
-        let mut c2: Vec<S::DType> = vec![];
-
-        for rec in rdr.records() {
-            let rec = rec?;
-            c1.push(rec[0].parse().unwrap());
-            c2.push(rec[1].parse().unwrap());
-        }
-
-        let mut col = Col2::from_cols(c1.into(), c2.into());
-        col.set_header(vec!["c1", "c2"]);
-
-        Ok(col)
-    }
-}
+//#[cfg(feature = "csv")]
+//impl<T, S> CSV for Col2<T, S>
+//where
+//    T: Column + Default,
+//    S: Column + Default,
+//    T::DType: ToString + FromStr,
+//    S::DType: ToString + FromStr,
+//    <T::DType as FromStr>::Err: std::fmt::Debug + Error,
+//    <S::DType as FromStr>::Err: std::fmt::Debug + Error,
+//    Vec<T::DType>: Into<T>,
+//    Vec<S::DType>: Into<S>,
+//{
+//    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
+//        let mut wtr = WriterBuilder::new()
+//            .delimiter(delimiter as u8)
+//            .from_path(file_path)?;
+//        let c1 = self.c1();
+//        let c2 = self.c2();
+//        let r: usize = c1.row();
+//        let c: usize = 2; // Col2
+//
+//        wtr.write_record(self.header())?;
+//
+//        for i in 0..r {
+//            let mut record: Vec<String> = vec!["".to_string(); c];
+//            record[0] = c1.idx(i).to_string();
+//            record[1] = c2.idx(i).to_string();
+//            wtr.write_record(record)?;
+//        }
+//        wtr.flush()?;
+//
+//        Ok(())
+//    }
+//
+//    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>> {
+//        let mut rdr = ReaderBuilder::new()
+//            .has_headers(true)
+//            .delimiter(delimiter as u8)
+//            .from_path(file_path)?;
+//
+//        let mut c1: Vec<T::DType> = vec![];
+//        let mut c2: Vec<S::DType> = vec![];
+//
+//        for rec in rdr.records() {
+//            let rec = rec?;
+//            c1.push(rec[0].parse().unwrap());
+//            c2.push(rec[1].parse().unwrap());
+//        }
+//
+//        let mut col = Col2::from_cols(c1.into(), c2.into());
+//        col.set_header(vec!["c1", "c2"]);
+//
+//        Ok(col)
+//    }
+//}
+multi_col_csv_impl!();
 
 // =============================================================================
 // Column Main Declaration
