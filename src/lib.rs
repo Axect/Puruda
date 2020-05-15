@@ -1,17 +1,18 @@
 extern crate col_macro;
-#[cfg(feature="netcdf")]
+extern crate csv;
+#[cfg(feature = "netcdf")]
 extern crate netcdf;
 use col_macro::*;
-use std::ops::{Index, IndexMut};
-use std::slice::SliceIndex;
-#[cfg(feature="netcdf")]
+use csv::{ReaderBuilder, WriterBuilder};
 use std::error::Error;
+use std::ops::{Index, IndexMut};
+use std::string::ToString;
 
 // =============================================================================
 // MultiCol
 // =============================================================================
 // MultiCol definition by `proc_macro`
-// 
+//
 // # Example implements
 // ```no-run
 // #[derive(Debug, Clone)]
@@ -26,7 +27,7 @@ multi_col_def!();
 // Implements for MultiCol
 // =============================================================================
 // Multi-Column implements
-// 
+//
 // # Example of implements
 // ```no-run
 // impl<T1, T2> Col2<T1, T2> where T1: Column + Default, T2: Column + Default {
@@ -47,18 +48,18 @@ multi_col_def!();
 //     pub fn c1(&self) -> &T1 {
 //         &self.col_1
 //     }
-// 
+//
 //     pub fn c1_mut(&mut self) -> &mut T1 {
 //         &mut self.col_1
-//     } 
+//     }
 //
 //     pub fn c2(&self) -> &T2 {
 //         &self.col_2
 //     }
-// 
+//
 //     pub fn c2_mut(&mut self) -> &mut T2 {
 //         &mut self.col_2
-//     } 
+//     }
 // }
 // ```
 multi_col_impl!();
@@ -66,14 +67,21 @@ multi_col_impl!();
 // =============================================================================
 // Netcdf support for MultiCol
 // =============================================================================
-#[cfg(feature="netcdf")]
+#[cfg(feature = "netcdf")]
 pub trait NetCDF: Sized {
     fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
     fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>>;
     fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>>;
 }
 
-impl<T, S> NetCDF for Col2<T, S> where T: Column + Default, S: Column + Default, T::DType: netcdf::Numeric, S::DType: netcdf::Numeric {
+#[cfg(feature = "netcdf")]
+impl<T, S> NetCDF for Col2<T, S>
+where
+    T: Column + Default,
+    S: Column + Default,
+    T::DType: netcdf::Numeric,
+    S::DType: netcdf::Numeric,
+{
     fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         let mut f = netcdf::create(file_path)?;
 
@@ -100,6 +108,50 @@ impl<T, S> NetCDF for Col2<T, S> where T: Column + Default, S: Column + Default,
 }
 
 // =============================================================================
+// CSV Implementation
+// =============================================================================
+#[cfg(feature = "csv")]
+pub trait CSV: Sized {
+    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>>;
+    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>>;
+}
+
+#[cfg(feature = "csv")]
+impl<T, S> CSV for Col2<T, S>
+where
+    T: Column + Default,
+    S: Column + Default,
+    T::DType: ToString,
+    S::DType: ToString,
+{
+    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
+        let mut wtr = WriterBuilder::new()
+            .delimiter(delimiter as u8)
+            .from_path(file_path)?;
+        let c1 = self.c1();
+        let c2 = self.c2();
+        let r: usize = c1.row();
+        let c: usize = 2; // Col2
+
+        wtr.write_record(self.header())?;
+
+        for i in 0..r {
+            let mut record: Vec<String> = vec!["".to_string(); c];
+            record[0] = c1.idx(i).to_string();
+            record[1] = c2.idx(i).to_string();
+            wtr.write_record(record)?;
+        }
+        wtr.flush()?;
+
+        Ok(())
+    }
+
+    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>> {
+        unimplemented!()
+    }
+}
+
+// =============================================================================
 // Column Main Declaration
 // =============================================================================
 pub trait Column {
@@ -110,15 +162,15 @@ pub trait Column {
     fn to_vec(&self) -> &Vec<Self::DType>;
 }
 
-impl<T> Index<usize> for dyn Column<DType=T> {
+impl<T> Index<usize> for dyn Column<DType = T> {
     type Output = T;
-    fn index(&self, index: usize) -> &Self::Output { 
+    fn index(&self, index: usize) -> &Self::Output {
         self.idx(index)
     }
 }
 
-impl<T> IndexMut<usize> for dyn Column<DType=T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output { 
+impl<T> IndexMut<usize> for dyn Column<DType = T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.idx_mut(index)
     }
 }
@@ -129,7 +181,7 @@ impl<T> IndexMut<usize> for dyn Column<DType=T> {
 //     fn index(&self, index: I) -> &Self::Output {
 //         &self.idx_slice(index)
 //     }
-// } 
+// }
 
 // =============================================================================
 // Column Implement for Various type
@@ -152,7 +204,7 @@ impl<'a> Column for Vec<&'a str> {
         self.len()
     }
 
-    fn idx(&self, n: usize) -> &Self::DType { 
+    fn idx(&self, n: usize) -> &Self::DType {
         &self[n]
     }
 

@@ -1,7 +1,7 @@
 extern crate peroxide;
 extern crate puruda;
-use puruda::*;
 use peroxide::*;
+use puruda::*;
 
 fn main() {
     let a = vec![1, 2, 3];

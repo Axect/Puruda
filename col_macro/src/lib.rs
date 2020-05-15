@@ -80,6 +80,10 @@ pub fn multi_col_impl(_item: TokenStream) -> TokenStream {
                 self.header = header;
             }} 
 
+            pub fn header(&self) -> &Vec<&'static str> {{
+                &self.header
+            }}
+
             pub fn from_cols({}) -> Self {{
                 Self {{
                     {}
