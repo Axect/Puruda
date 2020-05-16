@@ -1,9 +1,7 @@
 extern crate col_macro;
 extern crate csv;
-#[cfg(feature = "netcdf")]
-extern crate netcdf;
 use col_macro::*;
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{ReaderBuilder, WriterBuilder, Trim};
 use std::error::Error;
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
@@ -68,45 +66,45 @@ multi_col_impl!();
 // =============================================================================
 // Netcdf support for MultiCol
 // =============================================================================
-#[cfg(feature = "netcdf")]
-pub trait NetCDF: Sized {
-    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
-    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>>;
-    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>>;
-}
-
-#[cfg(feature = "netcdf")]
-impl<T, S> NetCDF for Col2<T, S>
-where
-    T: Column + Default,
-    S: Column + Default,
-    T::DType: netcdf::Numeric,
-    S::DType: netcdf::Numeric,
-{
-    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let mut f = netcdf::create(file_path)?;
-
-        let dim_name = "col_1".to_string();
-        let dim = self.col_1.row();
-        f.add_dimension(&dim_name, dim)?;
-        let var = &mut f.add_variable::<T::DType>(self.header[0], &[&dim_name])?;
-        var.put_values(&self.c1().to_vec()[..], None, None)?;
-
-        let dim_name = "col_2".to_string();
-        let dim = self.col_2.row();
-        f.add_dimension(&dim_name, dim)?;
-        let var = &mut f.add_variable::<T::DType>(self.header[0], &[&dim_name])?;
-        var.put_values(&self.c2().to_vec()[..], None, None)?;
-
-        Ok(())
-    }
-    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>> {
-        unimplemented!()
-    }
-    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>> {
-        unimplemented!()
-    }
-}
+//#[cfg(feature = "netcdf")]
+//pub trait NetCDF: Sized {
+//    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
+//    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>>;
+//    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>>;
+//}
+//
+//#[cfg(feature = "netcdf")]
+//impl<T, S> NetCDF for Col2<T, S>
+//where
+//    T: Column + Default,
+//    S: Column + Default,
+//    T::DType: netcdf::Numeric,
+//    S::DType: netcdf::Numeric,
+//{
+//    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+//        let mut f = netcdf::create(file_path)?;
+//
+//        let dim_name = "col_1".to_string();
+//        let dim = self.col_1.row();
+//        f.add_dimension(&dim_name, dim)?;
+//        let var = &mut f.add_variable::<T::DType>(self.header[0], &[&dim_name])?;
+//        var.put_values(&self.c1().to_vec()[..], None, None)?;
+//
+//        let dim_name = "col_2".to_string();
+//        let dim = self.col_2.row();
+//        f.add_dimension(&dim_name, dim)?;
+//        let var = &mut f.add_variable::<T::DType>(self.header[0], &[&dim_name])?;
+//        var.put_values(&self.c2().to_vec()[..], None, None)?;
+//
+//        Ok(())
+//    }
+//    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>> {
+//        unimplemented!()
+//    }
+//    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>> {
+//        unimplemented!()
+//    }
+//}
 
 // =============================================================================
 // CSV Implementation

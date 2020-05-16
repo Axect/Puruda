@@ -164,6 +164,7 @@ pub fn multi_col_csv_impl(_item: TokenStream) -> TokenStream {
             let mut rdr = ReaderBuilder::new()
                 .has_headers(true)
                 .delimiter(delimiter as u8)
+                .trim(Trim::All)
                 .from_path(file_path)?;
 
             {}

@@ -1,6 +1,6 @@
 # Puruda
 
-**PU**re **RU**st **Da**taframe
+**Pu**re **ru**st **da**taframe
 
 ## Example
 
@@ -17,8 +17,18 @@ fn main() {
     c2.c2().print();
 
     let c = c2.c1_mut();
-    *c = vec![4, 5, 6];
+    (*c) = vec![4, 5, 6];
 
-    c2.c1().print();
+    assert_eq!(c2.c1(), &vec![4, 5, 6]);
+
+    c2.write_csv("hello.csv", ',').expect("Can't write csv");
 }
 ```
+
+## Congruous Data Format
+
+* [x] CSV Trait
+    * [x] `write_csv`
+    * [x] `read_csv`
+* [ ] HDF5
+* [ ] JSON
