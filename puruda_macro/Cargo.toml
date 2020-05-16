@@ -1,8 +1,14 @@
 [package]
-name = "col-macro"
+name = "puruda-macro"
 version = "0.1.0"
 authors = ["Axect <axect@outlook.kr>"]
+description = "proc macro for puruda"
 edition = "2018"
+repository = "https://github.com/Axect/Puruda"
+license = "BSD-3-Clause"
+categories = ["data structures"]
+readme = "README.md"
+keywords = ["Dataframe"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

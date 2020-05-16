@@ -8,12 +8,12 @@ repository = "https://github.com/Axect/Puruda"
 license = "BSD-3-Clause"
 categories = ["data structures"]
 readme = "README.md"
-keywords = ["Dataframe"]
+keywords = ["Dataframe", "CSV"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-col-macro = { version = "0.1", path = "col_macro" }
+puruda-macro = { version = "0.1", path = "puruda_macro" }
 csv = { version = "1.1", optional = true }
 
 [dev-dependencies]
