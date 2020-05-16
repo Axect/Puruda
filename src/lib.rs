@@ -1,6 +1,6 @@
-extern crate col_macro;
+extern crate puruda_macro;
 extern crate csv;
-use col_macro::*;
+use puruda_macro::*;
 use csv::{ReaderBuilder, WriterBuilder, Trim};
 use std::error::Error;
 use std::ops::{Index, IndexMut};
