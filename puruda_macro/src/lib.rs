@@ -185,8 +185,7 @@ pub fn multi_col_csv_impl(_item: TokenStream) -> TokenStream {
         r_body_3,
         r_body_4);
 
-        let write = format!("#[cfg(feature=\"csv\")]
-        impl<{}> CSV for Col{}<{}>
+        let write = format!("impl<{}> CSV for Col{}<{}>
         where
             {},
             {},

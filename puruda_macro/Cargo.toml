@@ -1,11 +1,11 @@
 [package]
 name = "puruda-macro"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Axect <axect@outlook.kr>"]
 description = "proc macro for puruda"
 edition = "2018"
 repository = "https://github.com/Axect/Puruda"
-license = "BSD-3-Clause"
+license = "MIT OR Apache-2.0"
 categories = ["data-structures"]
 readme = "README.md"
 keywords = ["Dataframe"]
