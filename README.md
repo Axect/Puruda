@@ -1,6 +1,6 @@
-# Puruda
+# PURUDA
 
-**Pu**re **ru**st **da**taframe
+**PU**re **RU**st **DA**taframe
 
 ## Example
 

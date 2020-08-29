@@ -1,6 +1,6 @@
 extern crate peroxide;
 extern crate puruda;
-use peroxide::*;
+use peroxide::fuga::*;
 use puruda::*;
 
 fn main() {

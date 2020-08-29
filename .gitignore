@@ -1,2 +1,4 @@
 /target
 Cargo.lock
+example_data/*.nc
+example_data/*.csv
