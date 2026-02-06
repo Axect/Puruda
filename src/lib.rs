@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 extern crate puruda_macro;
 extern crate csv;
 use puruda_macro::*;
@@ -67,7 +69,7 @@ impl<'a> Column for Vec<&'a str> {
     }
 
     fn to_vec(&self) -> &Vec<Self::DType> {
-        &self
+        self
     }
 
     fn push(&mut self, val: Self::DType) {
@@ -75,7 +77,7 @@ impl<'a> Column for Vec<&'a str> {
     }
 }
 
-impl<'a> ColumnApply for Vec<&'a str> {
+impl ColumnApply for Vec<&str> {
     fn apply<F: FnMut(&mut Self::DType)>(&mut self, mut f: F) {
         for item in self.iter_mut() {
             f(item);
@@ -90,9 +92,9 @@ pub trait ColumnDisplay: Column where Self::DType: std::fmt::Display {
     fn print(&self) {
         let v = self.to_vec();
         print!("[");
-        for i in 0..v.len() {
+        for (i, item) in v.iter().enumerate() {
             if i > 0 { print!(", "); }
-            print!("{}", v[i]);
+            print!("{}", item);
         }
         println!("]");
     }
@@ -221,7 +223,7 @@ impl<C: Column> ColumnUnique for C where C::DType: Clone + Eq + std::hash::Hash 
 // =============================================================================
 pub fn map_column<C: Column, U, F: Fn(&C::DType) -> U>(col: &C, f: F) -> Vec<U> {
     let v = col.to_vec();
-    v.iter().map(|x| f(x)).collect()
+    v.iter().map(f).collect()
 }
 
 // =============================================================================
@@ -270,9 +272,12 @@ pub trait JsonIO: Sized {
     fn from_json_string(s: &str) -> Result<Self, Box<dyn Error>>;
 }
 
+/// Result type for JSON parsing.
+pub type JsonParseResult = Result<(Vec<String>, HashMap<String, Vec<String>>), Box<dyn Error>>;
+
 /// Minimal JSON parser for Puruda's specific format.
 /// Parses: {"headers": [...], "data": {"key": [values...], ...}}
-pub fn parse_puruda_json(s: &str) -> Result<(Vec<String>, HashMap<String, Vec<String>>), Box<dyn Error>> {
+pub fn parse_puruda_json(s: &str) -> JsonParseResult {
     let s = s.trim();
     // Extract headers array
     let headers_start = s.find("\"headers\"")

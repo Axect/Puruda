@@ -8,12 +8,12 @@ repository = "https://github.com/Axect/Puruda"
 license = "MIT OR Apache-2.0"
 categories = ["data-structures"]
 readme = "README.md"
-keywords = ["Dataframe"]
+keywords = ["Dataframe", "CSV"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-proc_macro = true
+proc-macro = true
 
 [dependencies]
 quote = "1"
