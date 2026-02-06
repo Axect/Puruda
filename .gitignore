@@ -2,3 +2,4 @@
 Cargo.lock
 example_data/*.nc
 example_data/*.csv
+example_data/*.json

@@ -6,170 +6,7 @@ use std::error::Error;
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 use std::string::ToString;
-
-// =============================================================================
-// MultiCol
-// =============================================================================
-// MultiCol definition by `proc_macro`
-//
-// # Example implements
-// ```no-run
-// #[derive(Debug, Clone)]
-// pub struct Col2<T1, T2> where T1: Column, T2: Column {
-//     pub col_1: T1,
-//     pub col_2: T2,
-// }
-// ```
-multi_col_def!();
-
-// =============================================================================
-// Implements for MultiCol
-// =============================================================================
-// Multi-Column implements
-//
-// # Example of implements
-// ```no-run
-// impl<T1, T2> Col2<T1, T2> where T1: Column + Default, T2: Column + Default {
-//     pub fn new() -> Self {
-//         Self {
-//             col_1: T1::default(),
-//             col_2: T2::default(),
-//         }
-//     }
-//
-//     pub fn from_cols(c1: T1, c2: T2) -> Self {
-//         Self {
-//             col_1: c1,
-//             col_2: c2,
-//         }
-//     }
-//
-//     pub fn c1(&self) -> &T1 {
-//         &self.col_1
-//     }
-//
-//     pub fn c1_mut(&mut self) -> &mut T1 {
-//         &mut self.col_1
-//     }
-//
-//     pub fn c2(&self) -> &T2 {
-//         &self.col_2
-//     }
-//
-//     pub fn c2_mut(&mut self) -> &mut T2 {
-//         &mut self.col_2
-//     }
-// }
-// ```
-multi_col_impl!();
-
-// =============================================================================
-// Netcdf support for MultiCol
-// =============================================================================
-#[cfg(feature = "nc")]
-pub trait NetCDF: Sized {
-    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
-    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>>;
-    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>>;
-}
-
-#[cfg(feature = "nc")]
-impl<T, S> NetCDF for Col2<T, S>
-where
-    T: Column + Default,
-    S: Column + Default,
-    T::DType: netcdf::Numeric,
-    S::DType: netcdf::Numeric,
-{
-    fn write_nc(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let mut f = netcdf::create(file_path)?;
-
-        let dim_name = "col_1".to_string();
-        let dim = self.col_1.row();
-        f.add_dimension(&dim_name, dim)?;
-        let var = &mut f.add_variable::<T::DType>(self.header[0], &[&dim_name])?;
-        var.put_values(&self.c1().to_vec()[..], None, None)?;
-
-        let dim_name = "col_2".to_string();
-        let dim = self.col_2.row();
-        f.add_dimension(&dim_name, dim)?;
-        let var = &mut f.add_variable::<S::DType>(self.header[1], &[&dim_name])?;
-        var.put_values(&self.c2().to_vec()[..], None, None)?;
-
-        Ok(())
-    }
-    fn read_nc(file_path: &str) -> Result<Self, Box<dyn Error>> {
-        unimplemented!()
-    }
-    fn read_nc_by_header(file_path: &str, header: Vec<&str>) -> Result<Self, Box<dyn Error>> {
-        unimplemented!()
-    }
-}
-
-// =============================================================================
-// CSV Implementation
-// =============================================================================
-pub trait CSV: Sized {
-    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>>;
-    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>>;
-}
-
-//#[cfg(feature = "csv")]
-//impl<T, S> CSV for Col2<T, S>
-//where
-//    T: Column + Default,
-//    S: Column + Default,
-//    T::DType: ToString + FromStr,
-//    S::DType: ToString + FromStr,
-//    <T::DType as FromStr>::Err: std::fmt::Debug + Error,
-//    <S::DType as FromStr>::Err: std::fmt::Debug + Error,
-//    Vec<T::DType>: Into<T>,
-//    Vec<S::DType>: Into<S>,
-//{
-//    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>> {
-//        let mut wtr = WriterBuilder::new()
-//            .delimiter(delimiter as u8)
-//            .from_path(file_path)?;
-//        let c1 = self.c1();
-//        let c2 = self.c2();
-//        let r: usize = c1.row();
-//        let c: usize = 2; // Col2
-//
-//        wtr.write_record(self.header())?;
-//
-//        for i in 0..r {
-//            let mut record: Vec<String> = vec!["".to_string(); c];
-//            record[0] = c1.idx(i).to_string();
-//            record[1] = c2.idx(i).to_string();
-//            wtr.write_record(record)?;
-//        }
-//        wtr.flush()?;
-//
-//        Ok(())
-//    }
-//
-//    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>> {
-//        let mut rdr = ReaderBuilder::new()
-//            .has_headers(true)
-//            .delimiter(delimiter as u8)
-//            .from_path(file_path)?;
-//
-//        let mut c1: Vec<T::DType> = vec![];
-//        let mut c2: Vec<S::DType> = vec![];
-//
-//        for rec in rdr.records() {
-//            let rec = rec?;
-//            c1.push(rec[0].parse().unwrap());
-//            c2.push(rec[1].parse().unwrap());
-//        }
-//
-//        let mut col = Col2::from_cols(c1.into(), c2.into());
-//        col.set_header(vec!["c1", "c2"]);
-//
-//        Ok(col)
-//    }
-//}
-multi_col_csv_impl!();
+use std::collections::HashMap;
 
 // =============================================================================
 // Column Main Declaration
@@ -180,6 +17,11 @@ pub trait Column {
     fn idx(&self, n: usize) -> &Self::DType;
     fn idx_mut(&mut self, n: usize) -> &mut Self::DType;
     fn to_vec(&self) -> &Vec<Self::DType>;
+    fn push(&mut self, val: Self::DType);
+}
+
+pub trait ColumnApply: Column {
+    fn apply<F: FnMut(&mut Self::DType)>(&mut self, f: F);
 }
 
 impl<T> Index<usize> for dyn Column<DType = T> {
@@ -195,16 +37,8 @@ impl<T> IndexMut<usize> for dyn Column<DType = T> {
     }
 }
 
-// impl<T, I> Index<I> for dyn Column<DType=T> where I: SliceIndex<[T]> {
-//     type Output = I::Output;
-
-//     fn index(&self, index: I) -> &Self::Output {
-//         &self.idx_slice(index)
-//     }
-// }
-
 // =============================================================================
-// Column Implement for Various type
+// Column Implement for Various types
 // =============================================================================
 col_vec_impl!(bool);
 col_vec_impl!(u32);
@@ -235,4 +69,327 @@ impl<'a> Column for Vec<&'a str> {
     fn to_vec(&self) -> &Vec<Self::DType> {
         &self
     }
+
+    fn push(&mut self, val: Self::DType) {
+        Vec::push(self, val);
+    }
 }
+
+impl<'a> ColumnApply for Vec<&'a str> {
+    fn apply<F: FnMut(&mut Self::DType)>(&mut self, mut f: F) {
+        for item in self.iter_mut() {
+            f(item);
+        }
+    }
+}
+
+// =============================================================================
+// ColumnDisplay trait
+// =============================================================================
+pub trait ColumnDisplay: Column where Self::DType: std::fmt::Display {
+    fn print(&self) {
+        let v = self.to_vec();
+        print!("[");
+        for i in 0..v.len() {
+            if i > 0 { print!(", "); }
+            print!("{}", v[i]);
+        }
+        println!("]");
+    }
+}
+
+impl<C: Column> ColumnDisplay for C where C::DType: std::fmt::Display {}
+
+// =============================================================================
+// Numeric trait
+// =============================================================================
+pub trait Numeric: Column {
+    fn sum(&self) -> Self::DType;
+    fn mean(&self) -> f64;
+    fn min_val(&self) -> Option<&Self::DType>;
+    fn max_val(&self) -> Option<&Self::DType>;
+    fn var(&self) -> f64;
+    fn std_dev(&self) -> f64;
+}
+
+macro_rules! impl_numeric_int {
+    ($($t:ty),*) => {
+        $(
+            impl Numeric for Vec<$t> {
+                fn sum(&self) -> $t {
+                    self.iter().copied().sum()
+                }
+
+                fn mean(&self) -> f64 {
+                    if self.is_empty() { return 0.0; }
+                    self.iter().copied().map(|x| x as f64).sum::<f64>() / self.len() as f64
+                }
+
+                fn min_val(&self) -> Option<&$t> {
+                    self.iter().min()
+                }
+
+                fn max_val(&self) -> Option<&$t> {
+                    self.iter().max()
+                }
+
+                fn var(&self) -> f64 {
+                    if self.is_empty() { return 0.0; }
+                    let m = self.mean();
+                    let n = self.len() as f64;
+                    self.iter().copied().map(|x| {
+                        let d = x as f64 - m;
+                        d * d
+                    }).sum::<f64>() / n
+                }
+
+                fn std_dev(&self) -> f64 {
+                    self.var().sqrt()
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_numeric_float {
+    ($($t:ty),*) => {
+        $(
+            impl Numeric for Vec<$t> {
+                fn sum(&self) -> $t {
+                    self.iter().copied().sum()
+                }
+
+                fn mean(&self) -> f64 {
+                    if self.is_empty() { return 0.0; }
+                    self.iter().copied().map(|x| x as f64).sum::<f64>() / self.len() as f64
+                }
+
+                fn min_val(&self) -> Option<&$t> {
+                    self.iter().reduce(|a, b| if a <= b { a } else { b })
+                }
+
+                fn max_val(&self) -> Option<&$t> {
+                    self.iter().reduce(|a, b| if a >= b { a } else { b })
+                }
+
+                fn var(&self) -> f64 {
+                    if self.is_empty() { return 0.0; }
+                    let m = self.mean();
+                    let n = self.len() as f64;
+                    self.iter().copied().map(|x| {
+                        let d = x as f64 - m;
+                        d * d
+                    }).sum::<f64>() / n
+                }
+
+                fn std_dev(&self) -> f64 {
+                    self.var().sqrt()
+                }
+            }
+        )*
+    };
+}
+
+impl_numeric_int!(u32, u64, usize, i32, i64, isize);
+impl_numeric_float!(f32, f64);
+
+// =============================================================================
+// ColumnUnique trait
+// =============================================================================
+pub trait ColumnUnique: Column where Self::DType: Clone + Eq + std::hash::Hash {
+    fn unique(&self) -> Vec<Self::DType> {
+        let v = self.to_vec();
+        let mut seen = std::collections::HashSet::new();
+        let mut result = Vec::new();
+        for item in v.iter() {
+            if seen.insert(item.clone()) {
+                result.push(item.clone());
+            }
+        }
+        result
+    }
+
+    fn n_unique(&self) -> usize {
+        self.unique().len()
+    }
+}
+
+impl<C: Column> ColumnUnique for C where C::DType: Clone + Eq + std::hash::Hash {}
+
+// =============================================================================
+// map_column utility function
+// =============================================================================
+pub fn map_column<C: Column, U, F: Fn(&C::DType) -> U>(col: &C, f: F) -> Vec<U> {
+    let v = col.to_vec();
+    v.iter().map(|x| f(x)).collect()
+}
+
+// =============================================================================
+// MultiCol definition by proc_macro
+// =============================================================================
+multi_col_def!();
+
+// =============================================================================
+// Implements for MultiCol
+// =============================================================================
+multi_col_impl!();
+
+// =============================================================================
+// Extra impl: head, tail, slice, filter, push_row, append, concat,
+//             reindex, sort_by_cN
+// =============================================================================
+multi_col_extra_impl!();
+
+// =============================================================================
+// Display trait for ColN
+// =============================================================================
+multi_col_display_impl!();
+
+// =============================================================================
+// Describe for ColN
+// =============================================================================
+multi_col_describe_impl!();
+
+// =============================================================================
+// CSV Implementation
+// =============================================================================
+pub trait CSV: Sized {
+    fn write_csv(&self, file_path: &str, delimiter: char) -> Result<(), Box<dyn Error>>;
+    fn read_csv(file_path: &str, delimiter: char) -> Result<Self, Box<dyn Error>>;
+}
+
+multi_col_csv_impl!();
+
+// =============================================================================
+// JSON I/O
+// =============================================================================
+pub trait JsonIO: Sized {
+    fn write_json(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
+    fn read_json(file_path: &str) -> Result<Self, Box<dyn Error>>;
+    fn to_json_string(&self) -> String;
+    fn from_json_string(s: &str) -> Result<Self, Box<dyn Error>>;
+}
+
+/// Minimal JSON parser for Puruda's specific format.
+/// Parses: {"headers": [...], "data": {"key": [values...], ...}}
+pub fn parse_puruda_json(s: &str) -> Result<(Vec<String>, HashMap<String, Vec<String>>), Box<dyn Error>> {
+    let s = s.trim();
+    // Extract headers array
+    let headers_start = s.find("\"headers\"")
+        .ok_or("Missing 'headers' key")?;
+    let arr_start = s[headers_start..].find('[')
+        .ok_or("Missing headers array")?;
+    let arr_end = s[headers_start + arr_start..].find(']')
+        .ok_or("Missing headers array end")?;
+    let headers_str = &s[headers_start + arr_start + 1..headers_start + arr_start + arr_end];
+    let headers: Vec<String> = headers_str
+        .split(',')
+        .map(|h| h.trim().trim_matches('"').to_string())
+        .filter(|h| !h.is_empty())
+        .collect();
+
+    // Extract data object
+    let data_start = s.find("\"data\"")
+        .ok_or("Missing 'data' key")?;
+    let data_brace = s[data_start..].find('{')
+        .ok_or("Missing data object")?;
+    let data_section = &s[data_start + data_brace..];
+
+    // Find matching closing brace
+    let mut depth = 0;
+    let mut data_end = 0;
+    for (i, ch) in data_section.char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    data_end = i;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    let data_inner = &data_section[1..data_end];
+
+    let mut data: HashMap<String, Vec<String>> = HashMap::new();
+
+    // Parse each key: [values] pair
+    let mut pos = 0;
+    let bytes = data_inner.as_bytes();
+    while pos < bytes.len() {
+        // Find next key
+        let key_start = match data_inner[pos..].find('"') {
+            Some(i) => pos + i + 1,
+            None => break,
+        };
+        let key_end = match data_inner[key_start..].find('"') {
+            Some(i) => key_start + i,
+            None => break,
+        };
+        let key = data_inner[key_start..key_end].to_string();
+
+        // Find array
+        let arr_start = match data_inner[key_end..].find('[') {
+            Some(i) => key_end + i + 1,
+            None => break,
+        };
+        let arr_end = match data_inner[arr_start..].find(']') {
+            Some(i) => arr_start + i,
+            None => break,
+        };
+        let arr_str = &data_inner[arr_start..arr_end];
+
+        // Parse values — handle quoted strings and bare values
+        let values = parse_json_array_values(arr_str);
+        data.insert(key, values);
+
+        pos = arr_end + 1;
+    }
+
+    Ok((headers, data))
+}
+
+fn parse_json_array_values(s: &str) -> Vec<String> {
+    let s = s.trim();
+    if s.is_empty() {
+        return vec![];
+    }
+    let mut values = Vec::new();
+    let mut i = 0;
+    let chars: Vec<char> = s.chars().collect();
+    while i < chars.len() {
+        // Skip whitespace and commas
+        while i < chars.len() && (chars[i] == ' ' || chars[i] == ',' || chars[i] == '\n' || chars[i] == '\r' || chars[i] == '\t') {
+            i += 1;
+        }
+        if i >= chars.len() { break; }
+
+        if chars[i] == '"' {
+            // Quoted string
+            i += 1;
+            let start = i;
+            while i < chars.len() && chars[i] != '"' {
+                if chars[i] == '\\' { i += 1; } // skip escaped char
+                i += 1;
+            }
+            let val: String = chars[start..i].iter().collect();
+            values.push(val);
+            if i < chars.len() { i += 1; } // skip closing quote
+        } else {
+            // Bare value (number, bool)
+            let start = i;
+            while i < chars.len() && chars[i] != ',' && chars[i] != ']' && chars[i] != ' ' && chars[i] != '\n' {
+                i += 1;
+            }
+            let val: String = chars[start..i].iter().collect();
+            if !val.is_empty() {
+                values.push(val);
+            }
+        }
+    }
+    values
+}
+
+multi_col_json_impl!();

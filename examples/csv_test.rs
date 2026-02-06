@@ -1,7 +1,4 @@
-extern crate peroxide;
 extern crate puruda;
-
-use peroxide::fuga::*;
 use puruda::*;
 
 fn main() {
@@ -16,13 +13,13 @@ fn main() {
 
     let mut c2 = Col2::from_cols(word, mean);
     c2.set_header(vec!["word", "mean"]);
-    c2.c1().print();
-    c2.c2().print();
+
+    println!("{}", c2);
 
     c2.write_csv("example_data/test.csv", ',').expect("Can't write csv");
 
     let c2_new =
         Col2::<Vec<String>, Vec<String>>::read_csv("example_data/test.csv", ',').expect("Can't read csv");
-    c2_new.c1().print();
-    c2_new.c2().print();
+    println!("\nRead back from CSV:");
+    println!("{}", c2_new);
 }
